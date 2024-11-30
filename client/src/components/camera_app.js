@@ -52,7 +52,7 @@ function CameraApp() {
     }, 150);
   };
 
-  const takePhoto = () => {
+  const takePhoto = async () => {
     const canvas = document.createElement('canvas');
     const video = videoRef.current;
     
@@ -61,7 +61,27 @@ function CameraApp() {
     
     canvas.getContext('2d').drawImage(video, 0, 0);
     const photoUrl = canvas.toDataURL('image/jpeg');
-    setPhoto(photoUrl);
+    try {
+      const response = await fetch('http://localhost:3001/process-photo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ photo: photoUrl }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to process photo');
+      }
+      else {
+        console.log(response);
+      }
+      const processedPhoto = await response.json();
+      setPhoto(processedPhoto.url);
+    } catch (error) {
+      console.error('Error processing photo:', error);
+      setPhoto(photoUrl); // Fallback to original photo if processing fails
+    }
   };
 
   const retake = () => {
