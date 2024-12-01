@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import * as faceapi from 'face-api.js';
 
 function CameraApp() {
   const videoRef = useRef(null);
@@ -61,27 +62,27 @@ function CameraApp() {
     
     canvas.getContext('2d').drawImage(video, 0, 0);
     const photoUrl = canvas.toDataURL('image/jpeg');
+    const color = await getFaceColor(photoUrl);
+    console.log(color);
     try {
-      const response = await fetch('http://localhost:3001/process-photo', {
+      const response = await fetch('http://localhost:3001/process-colour', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ photo: photoUrl }),
+        body: JSON.stringify({ colour: color }),
       });
       
       if (!response.ok) {
-        throw new Error('Failed to process photo');
+        throw new Error('Failed to process colour');
       }
       
 
-      const processedPhoto = await response.json();
-      console.log(processedPhoto.message);
+      const processedColour = await response.json();
+      console.log(processedColour.message);
 
-      //setPhoto(processedPhoto.url);
     } catch (error) {
-      console.error('Error processing photo:', error);
-      setPhoto(photoUrl); // Fallback to original photo if processing fails
+      console.error('Error processing colour:', error);
     }
   };
 
@@ -89,6 +90,55 @@ function CameraApp() {
     setPhoto(null);
     setCountdown(null);
   };
+
+  async function getFaceColor(imagePath) {
+    // Load the models
+    await faceapi.nets.ssdMobilenetv1.loadFromUri('/models');
+    await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+
+    // Load the image
+    const img = await faceapi.createCanvasFromMedia(await faceapi.fetchImage(imagePath));
+    
+    // Detect face
+    const detections = await faceapi.detectSingleFace(img)
+        .withFaceLandmarks();
+    
+    if (!detections) {
+        throw new Error('No face detected');
+    }
+
+    // Create canvas and draw image
+    const cvs = document.createElement('canvas');
+    cvs.width = img.width;
+    cvs.height = img.height;
+    const ctx = cvs.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+
+    // Get face bounds
+    const { _box: box } = detections.detection;
+    
+    // Sample multiple points on the face to get average color
+    const samplePoints = 10;
+    let r = 0, g = 0, b = 0;
+    
+    for (let i = 0; i < samplePoints; i++) {
+        const x = box.x + (box.width * (i / samplePoints));
+        const y = box.y + (box.height / 2);
+        const pixel = ctx.getImageData(x, y, 1, 1).data;
+        r += pixel[0];
+        g += pixel[1];
+        b += pixel[2];
+    }
+    
+    // Calculate average color
+    const avgColor = {
+        r: Math.round(r / samplePoints),
+        g: Math.round(g / samplePoints),
+        b: Math.round(b / samplePoints)
+    };
+    
+    return avgColor;
+}
 
   return (
     <div style={{
