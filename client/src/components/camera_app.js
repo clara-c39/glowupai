@@ -7,6 +7,8 @@ function CameraApp() {
   const [isHovering, setIsHovering] = useState(false);
   const [isFlashing, setIsFlashing] = useState(false);
   const [countdown, setCountdown] = useState(null);
+  const [message, setMessage] = useState(null); 
+  const [palette, setPalette] = useState(null); 
 
   useEffect(() => {
     startCamera();
@@ -62,6 +64,7 @@ function CameraApp() {
     
     canvas.getContext('2d').drawImage(video, 0, 0);
     const photoUrl = canvas.toDataURL('image/jpeg');
+    setPhoto(photoUrl);
     const color = await getFaceColor(photoUrl);
     console.log(color);
     try {
@@ -79,7 +82,19 @@ function CameraApp() {
       
 
       const processedColour = await response.json();
-      console.log(processedColour.message);
+      setMessage(processedColour.message);
+      if (processedColour.message.toLowerCase().includes("autumn")) {
+        setPalette("/Autumn.png");
+      }
+      else if (processedColour.message.toLowerCase().includes("spring")) {
+        setPalette("/Spring.png");
+      }
+      else if (processedColour.message.toLowerCase().includes("summer")) {
+        setPalette("/Summer.png");
+      }
+      else if (processedColour.message.toLowerCase().includes("winter")) {
+        setPalette("/Winter.png");
+      }
 
     } catch (error) {
       console.error('Error processing colour:', error);
@@ -144,180 +159,148 @@ function CameraApp() {
     <div style={{
       position: 'relative',
       width: '100%',
-      maxWidth: '800px',
+      maxWidth: '1200px',
       margin: '0 auto',
       height: '70vh',
+      display: 'flex',
       borderRadius: '20px',
       overflow: 'hidden',
       boxShadow: '0 12px 24px rgba(0, 0, 0, 0.2)',
       border: '3px solid rgba(255, 255, 255, 0.2)',
       background: 'linear-gradient(145deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%)',
     }}>
-      {/* Flash Effect */}
-      {isFlashing && (
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'white',
-          opacity: 0.7,
-          zIndex: 10,
-          animation: 'flash 0.15s ease-out',
-        }} />
-      )}
-
-      {/* Countdown Display */}
-      {countdown && (
-        <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          fontSize: '120px',
-          fontWeight: 'bold',
-          color: 'white',
-          textShadow: '0 0 20px rgba(0,0,0,0.5)',
-          zIndex: 5,
-          animation: 'pulse 1s infinite',
-        }}>
-          {countdown}
-        </div>
-      )}
-
-      {/* Camera Frame Overlay */}
+      {/* Left Column - Message */}
       <div style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        border: '2px solid rgba(255, 255, 255, 0.3)',
-        borderRadius: '20px',
-        pointerEvents: 'none',
-        zIndex: 2,
+        flex: '1',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px',
       }}>
-        {/* Corner Markers */}
-        <div style={{
-          position: 'absolute',
-          top: '20px',
-          left: '20px',
-          width: '30px',
-          height: '30px',
-          borderLeft: '3px solid #2196F3',
-          borderTop: '3px solid #2196F3',
-        }} />
-        <div style={{
-          position: 'absolute',
-          top: '20px',
-          right: '20px',
-          width: '30px',
-          height: '30px',
-          borderRight: '3px solid #2196F3',
-          borderTop: '3px solid #2196F3',
-        }} />
-        <div style={{
-          position: 'absolute',
-          bottom: '20px',
-          left: '20px',
-          width: '30px',
-          height: '30px',
-          borderLeft: '3px solid #2196F3',
-          borderBottom: '3px solid #2196F3',
-        }} />
-        <div style={{
-          position: 'absolute',
-          bottom: '20px',
-          right: '20px',
-          width: '30px',
-          height: '30px',
-          borderRight: '3px solid #2196F3',
-          borderBottom: '3px solid #2196F3',
-        }} />
+        {message && (
+          <div style={{
+            padding: '15px 25px',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            color: 'white',
+            borderRadius: '20px',
+            maxWidth: '250px',
+            wordWrap: 'break-word',
+          }}>
+            {message}
+          </div>
+        )}
       </div>
 
-      <video 
-        ref={videoRef} 
-        autoPlay 
-        playsInline
-        style={{ 
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          transform: 'scaleX(-1)', // Mirror effect
-        }}
-      />
-      
-      {photo && (
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          backgroundColor: '#000',
-          transition: 'all 0.3s ease',
-        }}>
-          <img 
-            src={photo} 
-            alt="Captured photo" 
+      {/* Middle Column - Video */}
+      <div style={{
+        flex: '2',
+        position: 'relative',
+        borderLeft: '1px solid rgba(255, 255, 255, 0.2)',
+        borderRight: '1px solid rgba(255, 255, 255, 0.2)',
+      }}>
+        {/* Flash Effect */}
+        {isFlashing && (
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'white',
+            opacity: 0.7,
+            zIndex: 10,
+            animation: 'flash 0.15s ease-out',
+          }} />
+        )}
+
+        {/* Show either video or photo */}
+        {!photo ? (
+          <video 
+            ref={videoRef} 
+            autoPlay 
+            playsInline
             style={{ 
               width: '100%',
               height: '100%',
               objectFit: 'cover',
-              transform: 'scaleX(-1)', // Mirror effect
+              transform: 'scaleX(-1)',
             }}
           />
-        </div>
-      )}
-
-      {/* Camera Controls */}
-      <div style={{
-        position: 'absolute',
-        bottom: '30px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        display: 'flex',
-        gap: '20px',
-        zIndex: 3,
-      }}>
-        {!photo ? (
-          <button 
-            onClick={startCountdownAndTakePhoto}
-            onMouseEnter={() => setIsHovering(true)}
-            onMouseLeave={() => setIsHovering(false)}
-            disabled={countdown !== null}
-            style={{
-              width: '60px',
-              height: '60px',
-              borderRadius: '50%',
-              backgroundColor: countdown !== null ? 'rgba(200, 200, 200, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-              border: `3px solid ${countdown !== null ? '#999' : '#2196F3'}`,
-              cursor: countdown !== null ? 'default' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.3s ease',
-              transform: isHovering && countdown === null ? 'scale(1.1)' : 'scale(1)',
-              boxShadow: isHovering && countdown === null
-                ? '0 0 20px rgba(33, 150, 243, 0.5)' 
-                : '0 4px 12px rgba(0, 0, 0, 0.2)',
-            }}
-          >
-            <div style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '50%',
-              backgroundColor: countdown !== null ? '#999' : '#2196F3',
-              transition: 'all 0.3s ease',
-              transform: isHovering && countdown === null ? 'scale(0.9)' : 'scale(1)',
-            }} />
-          </button>
         ) : (
-          <button 
-            onClick={retake}
-            style={{
+          <img 
+            src={photo}
+            alt="Captured photo"
+            style={{ 
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              transform: 'scaleX(-1)',
+            }}
+          />
+        )}
+
+        {/* Countdown Display */}
+        {countdown && (
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            fontSize: '120px',
+            fontWeight: 'bold',
+            color: 'white',
+            textShadow: '0 0 20px rgba(0,0,0,0.5)',
+            zIndex: 5,
+            animation: 'pulse 1s infinite',
+          }}>
+            {countdown}
+          </div>
+        )}
+
+        {/* Camera Controls */}
+        <div style={{
+          position: 'absolute',
+          bottom: '30px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          gap: '20px',
+          zIndex: 3,
+        }}>
+          {!photo ? (
+            <button 
+              onClick={startCountdownAndTakePhoto}
+              onMouseEnter={() => setIsHovering(true)}
+              onMouseLeave={() => setIsHovering(false)}
+              disabled={countdown !== null}
+              style={{
+                width: '60px',
+                height: '60px',
+                borderRadius: '50%',
+                backgroundColor: countdown !== null ? 'rgba(200, 200, 200, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+                border: `3px solid ${countdown !== null ? '#999' : '#2196F3'}`,
+                cursor: countdown !== null ? 'default' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.3s ease',
+                transform: isHovering && countdown === null ? 'scale(1.1)' : 'scale(1)',
+                boxShadow: isHovering && countdown === null
+                  ? '0 0 20px rgba(33, 150, 243, 0.5)' 
+                  : '0 4px 12px rgba(0, 0, 0, 0.2)',
+              }}
+            >
+              <div style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '50%',
+                backgroundColor: countdown !== null ? '#999' : '#2196F3',
+                transition: 'all 0.3s ease',
+                transform: isHovering && countdown === null ? 'scale(0.9)' : 'scale(1)',
+              }} />
+            </button>
+          ) : (
+            <button onClick={retake} style={{
               padding: '12px 24px',
               backgroundColor: '#f44336',
               color: 'white',
@@ -328,10 +311,33 @@ function CameraApp() {
               fontWeight: 'bold',
               transition: 'all 0.3s ease',
               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+            }}>
+              Retake
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Right Column - Palette Display */}
+      <div style={{
+        flex: '1',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px',
+      }}>
+        {palette && (
+          <img 
+            src={palette}
+            alt="Color Palette"
+            style={{
+              maxWidth: '100%',
+              maxHeight: '80%',
+              objectFit: 'contain',
+              borderRadius: '10px',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
             }}
-          >
-            Retake
-          </button>
+          />
         )}
       </div>
     </div>
