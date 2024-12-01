@@ -72,10 +72,15 @@ function Makeup() {
     const img = imageRef.current;
     const canvas = canvasRef.current;
     
-    console.log('Image dimensions:', img.width, img.height);
+    // Get the displayed image dimensions
+    const displaySize = {
+      width: img.offsetWidth,
+      height: img.offsetHeight
+    };
     
-    canvas.width = img.width;
-    canvas.height = img.height;
+    // Match canvas size to displayed image size
+    canvas.width = displaySize.width;
+    canvas.height = displaySize.height;
 
     try {
       const detections = await faceapi.detectAllFaces(
@@ -87,9 +92,16 @@ function Makeup() {
 
       console.log('Detections:', detections);
 
+      // Clear the canvas
       const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       
+      // Resize detections to match display size
+      const resizedDetections = faceapi.resizeResults(detections, displaySize);
+      
+      // Draw landmarks
+      faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
+
       if (detections.length > 0) {
         const detection = detections[0];
         const faceShape = analyzeFaceShape(detection.landmarks);
@@ -104,7 +116,6 @@ function Makeup() {
           }
         });
 
-        faceapi.draw.drawFaceLandmarks(canvas, detections);
         console.log('Face analyzed:', faceShape, skinTone);
       }
     } catch (error) {
@@ -169,18 +180,41 @@ function Makeup() {
     setImageLoaded(true);
   };
 
+  // Add function to handle file upload
+  const handleImageUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImage(e.target.result);
+        setImageLoaded(true);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // Update your return statement to show recommendations
   return (
     <div className="makeup-container">
       <div className="image-container">
-        <img 
-          ref={imageRef}
-          src="/image-test.jpg"
-          alt="Test face"
-          id="inputImage"
-          onLoad={handleInitialImageLoad}
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleImageUpload}
+          className="image-upload"
         />
-        <canvas ref={canvasRef} />
+        {image && (
+          <>
+            <img 
+              ref={imageRef}
+              src={image}
+              alt="Uploaded face"
+              id="inputImage"
+              onLoad={handleInitialImageLoad}
+            />
+            <canvas ref={canvasRef} />
+          </>
+        )}
       </div>
       
       <div className="recommendations-container">

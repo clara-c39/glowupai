@@ -1,19 +1,35 @@
 .makeup-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   padding: 20px;
 }
 
 .image-container {
-  position: relative;
-  width: 480px;  /* match your image width */
-  height: 360px; /* match your image height */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.upload-section {
+  width: 100%;
+  text-align: center;
   margin-bottom: 20px;
 }
 
-.image-container img,
-.image-container canvas {
+.image-upload {
+  padding: 10px;
+}
+
+.image-display {
+  position: relative;
+  display: inline-block;
+}
+
+.image-display img {
+  max-width: 100%;
+  height: auto;
+}
+
+.image-display canvas {
   position: absolute;
   top: 0;
   left: 0;
