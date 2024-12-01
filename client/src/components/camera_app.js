@@ -1,5 +1,9 @@
 import React, { useRef, useState, useEffect } from 'react';
+<<<<<<< HEAD
 import * as faceapi from 'face-api.js';
+=======
+import { useNavigate } from 'react-router-dom';
+>>>>>>> daniel
 
 function CameraApp() {
   const videoRef = useRef(null);
@@ -7,6 +11,7 @@ function CameraApp() {
   const [isHovering, setIsHovering] = useState(false);
   const [isFlashing, setIsFlashing] = useState(false);
   const [countdown, setCountdown] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     startCamera();
@@ -62,6 +67,7 @@ function CameraApp() {
     
     canvas.getContext('2d').drawImage(video, 0, 0);
     const photoUrl = canvas.toDataURL('image/jpeg');
+<<<<<<< HEAD
     const color = await getFaceColor(photoUrl);
     console.log(color);
     try {
@@ -84,6 +90,9 @@ function CameraApp() {
     } catch (error) {
       console.error('Error processing colour:', error);
     }
+=======
+    setPhoto(photoUrl);
+>>>>>>> daniel
   };
 
   const retake = () => {
@@ -91,6 +100,7 @@ function CameraApp() {
     setCountdown(null);
   };
 
+<<<<<<< HEAD
   async function getFaceColor(imagePath) {
     // Load the models
     await faceapi.nets.ssdMobilenetv1.loadFromUri('/models');
@@ -139,6 +149,30 @@ function CameraApp() {
     
     return avgColor;
 }
+=======
+  const proceed = async () => {
+    try {
+      console.log('Sending photo to server...');
+      const response = await fetch('http://localhost:3001/process-photo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ photo }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Server response:', data);
+        navigate('/color-analysis');
+      } else {
+        console.error('Failed to process photo');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+>>>>>>> daniel
 
   return (
     <div style={{
@@ -331,6 +365,25 @@ function CameraApp() {
             }}
           >
             Retake
+          </button>
+        )}
+        {photo && (
+          <button 
+            onClick={proceed}
+            style={{
+              padding: '12px 24px',
+              backgroundColor: '#4CAF50',
+              color: 'white',
+              border: 'none',
+              borderRadius: '25px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              transition: 'all 0.3s ease',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+            }}
+          >
+            Proceed
           </button>
         )}
       </div>
