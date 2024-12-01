@@ -97,42 +97,44 @@ function CameraApp() {
     canvas.getContext('2d').drawImage(video, 0, 0);
     const photoUrl = canvas.toDataURL('image/jpeg');
 
-    const generatedPhoto = await generateGlassPhoto(photoUrl);
-    setPhoto(generatedPhoto);
-
-    const color = await getFaceColor(photoUrl);
-    console.log(color);
     try {
-      const response = await fetch('http://localhost:3001/process-colour', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ colour: color }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to process colour');
-      }
-      
+        // First get face color
+        const color = await getFaceColor(photoUrl);
+        
+        // Process color with server
+        const response = await fetch('http://localhost:3001/process-colour', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ colour: color }),
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to process colour');
+        }
+        
+        const processedColour = await response.json();
+        setMessage(processedColour.message);
+        
+        // Set palette based on season
+        if (processedColour.message.toLowerCase().includes("autumn")) {
+            setPalette("/Autumn.png");
+        } else if (processedColour.message.toLowerCase().includes("spring")) {
+            setPalette("/Spring.png");
+        } else if (processedColour.message.toLowerCase().includes("summer")) {
+            setPalette("/Summer.png");
+        } else if (processedColour.message.toLowerCase().includes("winter")) {
+            setPalette("/Winter.png");
+        }
 
-      const processedColour = await response.json();
-      setMessage(processedColour.message);
-      if (processedColour.message.toLowerCase().includes("autumn")) {
-        setPalette("/Autumn.png");
-      }
-      else if (processedColour.message.toLowerCase().includes("spring")) {
-        setPalette("/Spring.png");
-      }
-      else if (processedColour.message.toLowerCase().includes("summer")) {
-        setPalette("/Summer.png");
-      }
-      else if (processedColour.message.toLowerCase().includes("winter")) {
-        setPalette("/Winter.png");
-      }
+        // Only after color processing is complete, proceed with glasses analysis
+        const glassesPhoto = await generateGlassPhoto(photoUrl);
+        setPhoto(glassesPhoto);
 
     } catch (error) {
-      console.error('Error processing colour:', error);
+        console.error('Error in photo processing:', error);
+        setError(error.message);
     }
   };
 
@@ -142,6 +144,10 @@ function CameraApp() {
   };
 
   async function getFaceColor(imagePath) {
+    // Create canvas with willReadFrequently attribute
+    const sampleCanvas = document.createElement('canvas');
+    sampleCanvas.setAttribute('willReadFrequently', 'true');
+    
     // Load the image
     const img = await faceapi.createCanvasFromMedia(await faceapi.fetchImage(imagePath));
     
@@ -154,10 +160,9 @@ function CameraApp() {
     }
 
     // Create canvas and draw image
-    const cvs = document.createElement('canvas');
-    cvs.width = img.width;
-    cvs.height = img.height;
-    const ctx = cvs.getContext('2d');
+    sampleCanvas.width = img.width;
+    sampleCanvas.height = img.height;
+    const ctx = sampleCanvas.getContext('2d');
     ctx.drawImage(img, 0, 0);
 
     // Get face bounds
@@ -264,11 +269,28 @@ function CameraApp() {
   };  
 
   const generateGlassPhoto = async (image) => {
-    if (!image) return;
+    if (!image) {
+        console.error('No image provided to generateGlassPhoto');
+        return null;
+    }
+
+    // Create a temporary canvas if canvasRef is not available
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.setAttribute('willReadFrequently', 'true');
+    const canvas = canvasRef.current || tempCanvas;
+    const ctx = canvas.getContext('2d');
 
     try {
-        // Load the image
-        const img = await faceapi.createCanvasFromMedia(image);
+        // Create and load image properly
+        const imgElement = new Image();
+        imgElement.src = image;
+        await new Promise((resolve, reject) => {
+            imgElement.onload = resolve;
+            imgElement.onerror = reject;
+        });
+        
+        // Create canvas with loaded image
+        const img = await faceapi.createCanvasFromMedia(imgElement);
         
         // Detect face
         const detection = await faceapi
@@ -282,8 +304,12 @@ function CameraApp() {
         // Store the detection results
         setFaceDetection(detection);
 
+        // Analyze face shape and get recommendations
         const faceShape = analyzeFaceShape(detection.landmarks);
+        console.log('Detected face shape:', faceShape);
+
         const recommendations = getGlassesRecommendations(faceShape);
+        console.log('Glasses recommendations:', recommendations);
         
         // Set the first recommended glasses style
         const firstRecommendedStyle = recommendations[0];
@@ -292,41 +318,46 @@ function CameraApp() {
         // Create and store the original image
         const displayImage = new Image();
         displayImage.src = image;
-        displayImage.onload = async () => {
-            setOriginalImage(displayImage);
-            
-            const canvas = canvasRef.current;
-            const ctx = canvas.getContext('2d');
-            
-            // Set canvas size to match image
-            canvas.width = displayImage.width;
-            canvas.height = displayImage.height;
-            
-            // Draw the original image
-            ctx.drawImage(displayImage, 0, 0, canvas.width, canvas.height);
-            
-            // Load and draw initial glasses
-            const glassesImg = new Image();
-            glassesImg.src = glassesImages[firstRecommendedStyle];
-            
-            await glassesImg.decode();
-            const position = calculateGlassesPosition(detection.landmarks, glassesImg, canvas);
-            drawGlassesOnCanvas(ctx, glassesImg, position, displayImage);
-
-            // Return the canvas as an image
-            const resultImage = canvas.toDataURL();
-            return resultImage;
-        };
+        await new Promise((resolve, reject) => {
+            displayImage.onload = resolve;
+            displayImage.onerror = reject;
+        });
         
+        setOriginalImage(displayImage);
+        
+        if (!canvasRef.current) {
+            throw new Error('Canvas reference is not available');
+        }
+        
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas size and draw image
+        canvas.width = displayImage.width;
+        canvas.height = displayImage.height;
+        ctx.drawImage(displayImage, 0, 0, canvas.width, canvas.height);
+        
+        // Load and draw glasses
+        const glassesImg = new Image();
+        glassesImg.src = glassesImages[firstRecommendedStyle];
+        await glassesImg.decode();
+        
+        const position = calculateGlassesPosition(detection.landmarks, glassesImg, canvas);
+        drawGlassesOnCanvas(ctx, glassesImg, position, displayImage);
+
+        // Set results
         setResults({
             faceShape,
             recommendedGlasses: recommendations
         });
 
+        // Return the final canvas image
+        return canvas.toDataURL();
+
     } catch (error) {
-        console.error('Error processing image:', error);
-        alert(error.message);
-        return null; // Return null in case of error
+        console.error('Error in generateGlassPhoto:', error);
+        setError(error.message);
+        return null;
     }
   };
 
@@ -470,6 +501,13 @@ function CameraApp() {
       border: '3px solid rgba(255, 255, 255, 0.2)',
       background: 'linear-gradient(145deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%)',
     }}>
+      {/* Add hidden canvas for glasses overlay */}
+      <canvas 
+        ref={canvasRef}
+        style={{ display: 'none' }}
+        willReadFrequently={true}  // Add this attribute
+      />
+      
       {/* Left Column - Message */}
       <div style={{
         flex: '1',
