@@ -73,11 +73,12 @@ function CameraApp() {
       if (!response.ok) {
         throw new Error('Failed to process photo');
       }
-      else {
-        console.log(response);
-      }
+      
+
       const processedPhoto = await response.json();
-      setPhoto(processedPhoto.url);
+      console.log(processedPhoto.message);
+
+      //setPhoto(processedPhoto.url);
     } catch (error) {
       console.error('Error processing photo:', error);
       setPhoto(photoUrl); // Fallback to original photo if processing fails
