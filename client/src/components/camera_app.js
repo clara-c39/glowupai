@@ -16,6 +16,9 @@ function CameraApp() {
   const [selectedGlasses, setSelectedGlasses] = useState(null);
   const [error, setError] = useState(null);
   const [originalImage, setOriginalImage] = useState(null);  
+  const [stage, setStage] = useState('camera'); // 'camera', 'color', 'glasses'
+  const [recommendedGlasses, setRecommendedGlasses] = useState(null);
+  const [currentFaceShape, setCurrentFaceShape] = useState(null);
 
   const glassesImages = {
     round: '/glasses-images/round.png',
@@ -128,9 +131,8 @@ function CameraApp() {
             setPalette("/Winter.png");
         }
 
-        // Only after color processing is complete, proceed with glasses analysis
-        const glassesPhoto = await generateGlassPhoto(photoUrl);
-        setPhoto(glassesPhoto);
+        setStage('color');
+        setPhoto(photoUrl); // Store original photo
 
     } catch (error) {
         console.error('Error in photo processing:', error);
@@ -307,9 +309,11 @@ function CameraApp() {
         // Analyze face shape and get recommendations
         const faceShape = analyzeFaceShape(detection.landmarks);
         console.log('Detected face shape:', faceShape);
+        setCurrentFaceShape(faceShape);  // Set the face shape state
 
         const recommendations = getGlassesRecommendations(faceShape);
         console.log('Glasses recommendations:', recommendations);
+        setRecommendedGlasses(recommendations);  // Set the recommendations state
         
         // Set the first recommended glasses style
         const firstRecommendedStyle = recommendations[0];
@@ -324,13 +328,6 @@ function CameraApp() {
         });
         
         setOriginalImage(displayImage);
-        
-        if (!canvasRef.current) {
-            throw new Error('Canvas reference is not available');
-        }
-        
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
         
         // Set canvas size and draw image
         canvas.width = displayImage.width;
@@ -382,18 +379,24 @@ function CameraApp() {
     return descriptions[shape] || "Unique face shape with its own distinctive features.";
   };
 
-  const handleGlassesChange = (style) => {
+  const handleGlassesChange = async (style) => {
     if (!faceDetection || !originalImage) {
         console.error('No face detection data or original image available');
         return;
     }
 
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    try {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
 
-    // Load new glasses image
-    const glassesImg = new Image();
-    glassesImg.onload = () => {
+        // Load new glasses image
+        const glassesImg = new Image();
+        await new Promise((resolve, reject) => {
+            glassesImg.onload = resolve;
+            glassesImg.onerror = reject;
+            glassesImg.src = glassesImages[style];
+        });
+
         // Calculate position for new glasses
         const position = calculateGlassesPosition(faceDetection.landmarks, glassesImg, canvas);
         
@@ -402,8 +405,13 @@ function CameraApp() {
         
         // Update selected glasses state
         setSelectedGlasses(glassesImages[style]);
-    };
-    glassesImg.src = glassesImages[style];
+        
+        // Update photo with new canvas content
+        setPhoto(canvas.toDataURL());
+    } catch (error) {
+        console.error('Error changing glasses:', error);
+        setError(error.message);
+    }
   };  
 
   const calculateGlassesPosition = (landmarks, glassesImg, canvas) => {
@@ -487,6 +495,19 @@ function CameraApp() {
     ctx.restore();
   };
 
+  const handleProceedToGlasses = async () => {
+    try {
+        const glassesPhoto = await generateGlassPhoto(photo);
+        if (glassesPhoto) {
+            setStage('glasses');
+            setPhoto(glassesPhoto);
+        }
+    } catch (error) {
+        console.error('Error processing glasses:', error);
+        setError(error.message);
+    }
+  };
+
   return (
     <div style={{
       position: 'relative',
@@ -508,7 +529,7 @@ function CameraApp() {
         willReadFrequently={true}  // Add this attribute
       />
       
-      {/* Left Column - Message */}
+      {/* Left Column - Message/Face Shape */}
       <div style={{
         flex: '1',
         display: 'flex',
@@ -516,7 +537,7 @@ function CameraApp() {
         justifyContent: 'center',
         padding: '20px',
       }}>
-        {message && (
+        {stage === 'color' && message && (
           <div style={{
             padding: '15px 25px',
             backgroundColor: 'rgba(0, 0, 0, 0.7)',
@@ -528,9 +549,22 @@ function CameraApp() {
             {message}
           </div>
         )}
+        {stage === 'glasses' && currentFaceShape && (
+          <div style={{
+            padding: '15px 25px',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            color: 'white',
+            borderRadius: '20px',
+            maxWidth: '250px',
+            wordWrap: 'break-word',
+          }}>
+            <h3>Your Face Shape: {currentFaceShape}</h3>
+            <p>{getFaceShapeDescription(currentFaceShape)}</p>
+          </div>
+        )}
       </div>
 
-      {/* Middle Column - Video */}
+      {/* Middle Column - Video/Photo */}
       <div style={{
         flex: '2',
         position: 'relative',
@@ -606,7 +640,7 @@ function CameraApp() {
           gap: '20px',
           zIndex: 3,
         }}>
-          {!photo ? (
+          {stage === 'camera' && !photo && (
             <button 
               onClick={startCountdownAndTakePhoto}
               onMouseEnter={() => setIsHovering(true)}
@@ -638,7 +672,9 @@ function CameraApp() {
                 transform: isHovering && countdown === null ? 'scale(0.9)' : 'scale(1)',
               }} />
             </button>
-          ) : (
+          )}
+
+          {stage === 'camera' && photo && (
             <button onClick={retake} style={{
               padding: '12px 24px',
               backgroundColor: '#f44336',
@@ -654,10 +690,30 @@ function CameraApp() {
               Retake
             </button>
           )}
+
+          {stage === 'color' && (
+            <button 
+              onClick={handleProceedToGlasses}
+              style={{
+                padding: '12px 24px',
+                backgroundColor: '#2196F3',
+                color: 'white',
+                border: 'none',
+                borderRadius: '25px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+              }}
+            >
+              Next
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Right Column - Palette Display */}
+      {/* Right Column - Palette/Glasses Options */}
       <div style={{
         flex: '1',
         display: 'flex',
@@ -665,7 +721,7 @@ function CameraApp() {
         justifyContent: 'center',
         padding: '20px',
       }}>
-        {palette && (
+        {stage === 'color' && palette && (
           <img 
             src={palette}
             alt="Color Palette"
@@ -677,6 +733,38 @@ function CameraApp() {
               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
             }}
           />
+        )}
+        {stage === 'glasses' && recommendedGlasses && (
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '15px',
+            alignItems: 'center',
+          }}>
+            <h3>Recommended Frames</h3>
+            {recommendedGlasses.map((style) => (
+              <button
+                key={style}
+                onClick={() => handleGlassesChange(style)}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: selectedGlasses === glassesImages[style] 
+                    ? '#2196F3' 
+                    : 'rgba(255, 255, 255, 0.9)',
+                  color: selectedGlasses === glassesImages[style] 
+                    ? 'white' 
+                    : 'black',
+                  border: 'none',
+                  borderRadius: '20px',
+                  cursor: 'pointer',
+                  width: '80%',
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                {style.charAt(0).toUpperCase() + style.slice(1)}
+              </button>
+            ))}
+          </div>
         )}
       </div>
     </div>
