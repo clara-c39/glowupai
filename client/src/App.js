@@ -11,7 +11,7 @@ function App() {
       padding: '10px',
       backgroundColor: '#f5f5f5',
     }}>
-      <h1 style={{
+      {/* <h1 style={{
         fontSize: '4.5rem',
         fontWeight: 'normal',
         color: '#2196F3',
@@ -27,7 +27,7 @@ function App() {
         padding: '0 20px',
       }}>
         LooksMaxxer
-      </h1>
+      </h1> */}
       <CameraApp />
     </div>
   );

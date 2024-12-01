@@ -1,5 +1,174 @@
 import React, { useRef, useState, useEffect } from 'react';
 import * as faceapi from 'face-api.js';
+import Glitter from './Glitter';
+
+// Keep only the BorderStars component
+const BorderStars = () => {
+  // Create stars for each side of the rectangle
+  const createSideStars = (side, count) => {
+    const stars = [];
+    for (let i = 0; i < count; i++) {
+      let style = {
+        position: 'absolute',
+        fontSize: '32px',
+        animation: `twinkle ${1 + Math.random()}s infinite ease-in-out`,
+      };
+
+      // Position stars based on side
+      switch (side) {
+        case 'top':
+          style = {
+            ...style,
+            top: '-35px',
+            left: `${(i + 1) * (100 / (count + 1))}%`,
+          };
+          break;
+        case 'bottom':
+          style = {
+            ...style,
+            bottom: '-35px',
+            left: `${(i + 1) * (100 / (count + 1))}%`,
+          };
+          break;
+        case 'left':
+          style = {
+            ...style,
+            left: '-35px',
+            top: `${(i + 1) * (100 / (count + 1))}%`,
+          };
+          break;
+        case 'right':
+          style = {
+            ...style,
+            right: '-35px',
+            top: `${(i + 1) * (100 / (count + 1))}%`,
+          };
+          break;
+        default:
+          break;
+      }
+
+      stars.push(
+        <div key={`${side}-${i}`} style={style}>
+          ✨
+        </div>
+      );
+    }
+    return stars;
+  };
+
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      pointerEvents: 'none',
+      zIndex: 1,
+    }}>
+      {createSideStars('top', 6)}
+      {createSideStars('bottom', 6)}
+      {createSideStars('left', 4)}
+      {createSideStars('right', 4)}
+    </div>
+  );
+};
+
+// Add this new Banner component after the BorderStars component
+const Banner = () => (
+  <div style={{
+    position: 'absolute',
+    top: '-80px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    width: '100%',
+    textAlign: 'center',
+    padding: '15px 0',
+    background: `linear-gradient(
+      90deg, 
+      rgba(0, 247, 255, 0.1) 0%,
+      rgba(255, 0, 255, 0.2) 50%,
+      rgba(183, 0, 255, 0.1) 100%
+    )`,
+    backdropFilter: 'blur(5px)',
+    borderRadius: '15px',
+    boxShadow: `
+      0 0 30px rgba(0, 247, 255, 0.3),
+      0 0 60px rgba(255, 0, 255, 0.2),
+      0 0 90px rgba(183, 0, 255, 0.1)
+    `,
+    border: '2px solid rgba(255, 255, 255, 0.3)',
+    zIndex: 2,
+  }}>
+    <h1 style={{
+      margin: 0,
+      color: 'white',
+      fontSize: '2.5em',
+      fontWeight: 'bold',
+      textTransform: 'uppercase',
+      letterSpacing: '3px',
+      textShadow: `
+        0 0 10px rgba(0, 247, 255, 0.5),
+        0 0 20px rgba(255, 0, 255, 0.3),
+        0 0 30px rgba(183, 0, 255, 0.2)
+      `,
+    }}>
+      Looksmaxxer
+    </h1>
+  </div>
+);
+
+// Add these styles to your existing styles
+const styles = `
+  @keyframes twinkle {
+    0%, 100% { 
+      opacity: 0.4; 
+      transform: scale(0.8); 
+      filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.8));
+    }
+    50% { 
+      opacity: 1; 
+      transform: scale(1.2); 
+      filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.8));
+    }
+  }
+  @keyframes flash {
+    from { opacity: 0.7; }
+    to { opacity: 0; }
+  }
+  @keyframes pulse {
+    0% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -50%) scale(1.1); }
+    100% { transform: translate(-50%, -50%) scale(1); }
+  }
+  @keyframes glowPulse {
+    0%, 100% {
+      box-shadow: 
+        0 12px 24px rgba(0, 0, 0, 0.2),
+        0 0 50px rgba(0, 247, 255, 0.5),
+        0 0 100px rgba(255, 0, 255, 0.4),
+        0 0 150px rgba(183, 0, 255, 0.3),
+        inset 0 0 60px rgba(0, 247, 255, 0.3),
+        inset 0 0 120px rgba(255, 0, 255, 0.2);
+    }
+    50% {
+      box-shadow: 
+        0 12px 24px rgba(0, 0, 0, 0.2),
+        0 0 70px rgba(0, 247, 255, 0.6),
+        0 0 120px rgba(255, 0, 255, 0.5),
+        0 0 170px rgba(183, 0, 255, 0.4),
+        inset 0 0 80px rgba(0, 247, 255, 0.4),
+        inset 0 0 140px rgba(255, 0, 255, 0.3);
+    }
+  }
+`;
+
+// Add styles to document
+const styleSheet = document.createElement("style");
+styleSheet.type = "text/css";
+styleSheet.appendChild(document.createTextNode(styles));
+document.head.appendChild(styleSheet);
 
 function CameraApp() {
   const videoRef = useRef(null);
@@ -513,15 +682,30 @@ function CameraApp() {
       position: 'relative',
       width: '100%',
       maxWidth: '1200px',
-      margin: '0 auto',
+      margin: '100px auto 0',  // Added top margin to make room for banner
       height: '70vh',
       display: 'flex',
       borderRadius: '20px',
-      overflow: 'hidden',
-      boxShadow: '0 12px 24px rgba(0, 0, 0, 0.2)',
-      border: '3px solid rgba(255, 255, 255, 0.2)',
-      background: 'linear-gradient(145deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%)',
+      overflow: 'visible',
+      boxShadow: `
+        0 12px 24px rgba(0, 0, 0, 0.2),
+        0 0 50px rgba(0, 247, 255, 0.5),
+        0 0 100px rgba(255, 0, 255, 0.4),
+        0 0 150px rgba(183, 0, 255, 0.3),
+        inset 0 0 60px rgba(0, 247, 255, 0.3),
+        inset 0 0 120px rgba(255, 0, 255, 0.2)
+      `,
+      border: '3px solid rgba(255, 255, 255, 0.7)',
+      background: 'linear-gradient(145deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 100%)',
+      backdropFilter: 'blur(10px)',
+      animation: 'glowPulse 3s infinite ease-in-out',
     }}>
+      {/* Add Banner */}
+      <Banner />
+      
+      {/* Keep Border Stars */}
+      <BorderStars />
+
       {/* Add hidden canvas for glasses overlay */}
       <canvas 
         ref={canvasRef}
@@ -770,25 +954,5 @@ function CameraApp() {
     </div>
   );
 }
-
-// Add these styles to your CSS
-const styles = `
-  @keyframes flash {
-    from { opacity: 0.7; }
-    to { opacity: 0; }
-  }
-
-  @keyframes pulse {
-    0% { transform: translate(-50%, -50%) scale(1); }
-    50% { transform: translate(-50%, -50%) scale(1.1); }
-    100% { transform: translate(-50%, -50%) scale(1); }
-  }
-`;
-
-// Add styles to document
-const styleSheet = document.createElement("style");
-styleSheet.type = "text/css";
-styleSheet.appendChild(document.createTextNode(styles));
-document.head.appendChild(styleSheet);
 
 export default CameraApp;

@@ -30,7 +30,7 @@ app.post('/process-colour', async (req, res) => {
       messages: [
         {
           role: "system",
-          content: "You are a color analysis expert. Given a color, determine which seasonal color palette (Winter, Spring, Summer, or Autumn) it best belongs to. Provide a one sentence explanation why."
+          content: "You are a color analysis expert. Given a color, and analyzing the undertones, determine which seasonal color palette (Winter, Spring, Summer, or Autumn) it best belongs to. Provide a one sentence explanation why."
         },
         {
           role: "user",
