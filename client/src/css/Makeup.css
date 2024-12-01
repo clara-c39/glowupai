@@ -1,0 +1,59 @@
+.makeup-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+}
+
+.image-container {
+  position: relative;
+  width: 480px;  /* match your image width */
+  height: 360px; /* match your image height */
+  margin-bottom: 20px;
+}
+
+.image-container img,
+.image-container canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.recommendations-container {
+  width: 100%;
+  max-width: 800px;
+  padding: 20px;
+  margin-top: 380px;  /* adjust based on your image height */
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.recommendations-container h2 {
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.recommendations-container h3,
+.recommendations-container h4 {
+  color: #444;
+  margin-top: 15px;
+}
+
+.recommendations-container ul {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.recommendations-container li {
+  margin: 8px 0;
+  padding-left: 20px;
+  position: relative;
+}
+
+.recommendations-container li:before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #666;
+}
