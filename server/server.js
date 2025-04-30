@@ -1,13 +1,21 @@
 require('dotenv').config();
 const express = require('express');
 const OpenAI = require('openai');
+const cors = require('cors');
 const app = express();
+
+app.use(cors({
+  origin: [
+    'https://style-analyzer.vercel.app',
+    'http://localhost:3000'
+  ],
+  credentials: true
+}));
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
 });
-const cors = require('cors');
-app.use(cors());
+
 app.use(express.json({limit: '50mb'}));
 
 console.log(process.env.OPENAI_API_KEY);
