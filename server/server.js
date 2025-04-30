@@ -6,7 +6,7 @@ const app = express();
 
 app.use(cors({
   origin: [
-    'https://style-analyzer.vercel.app',
+    'https://looksmaxxer.vercel.app',
     'http://localhost:3000'
   ],
   credentials: true
