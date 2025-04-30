@@ -4,11 +4,14 @@ const OpenAI = require('openai');
 const cors = require('cors');
 const app = express();
 
-app.use(cors({
+pp.use(cors({
   origin: [
     'https://looksmaxxer.vercel.app',
+    'https://looksmaxxer-server.vercel.app',
     'http://localhost:3000'
   ],
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type'],
   credentials: true
 }));
 

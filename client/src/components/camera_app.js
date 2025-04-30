@@ -274,7 +274,7 @@ function CameraApp() {
         const color = await getFaceColor(photoUrl);
         
         // Process color with server
-        const response = await fetch('http://localhost:3001/process-colour', {
+        const response = await fetch('https://looksmaxxer-server.vercel.app/process-colour', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
